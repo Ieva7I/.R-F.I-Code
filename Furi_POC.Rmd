@@ -1,0 +1,228 @@
+---
+title: "USA Mineral Deposits"
+author: "Fiorello Ieva"
+date: "7/16/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r Load Libraries, include=FALSE}
+library(sf)
+library(dplyr)
+library(tidygeocoder)
+library(mapboxapi)
+library(hereR)
+library(osrm)
+library(CLVTools)
+library(logbin)
+library(rattle)
+library(corrplot)
+library(fastDummies)
+library(survival)
+library(survminer)
+library(lubridate)
+library(prophet)
+#library(urbnmapr)
+library(ggpubr)
+library(rfm)
+library(ggrepel)
+library(treemap)
+library(rpart.plot)
+library(rpart)
+library(caret)
+library(plotly)
+#library(rbokeh)
+library(DiagrammeR)
+library(crosstalk)
+library(MonteCarlo)
+library(SCperf)
+library(DT)
+library(dplyr)
+library(qrmtools)
+library(TTR)
+library(xts)
+library(zoo)
+library(quantmod)
+library(qrmtools)
+library(forecastHybrid)
+library(forecast)
+library(Quandl)
+library(ggplot2)
+library(ggridges)
+library(MASS)
+library(GMDH)
+library(nnfor)
+library(glmnet)
+library(stats)
+library(keras)
+library(xgboost)
+library(XBRL)
+library(finreportr)
+library(reshape2)
+library(highcharter)
+library(dygraphs)
+library(PerformanceAnalytics)
+library(purrr)
+library(tidyr)
+library(openair)
+library(tidyverse)
+library(wordcloud)
+library(arules)
+library(officer)
+library(lubridate)
+library(flextable)
+library(statebins)
+library(pander)
+library(kableExtra)
+library(ggridges)
+library(ggthemes)
+library(survival)
+library(survminer)
+library(intergraph)
+library(chron)
+library(pander)
+library(summarytools)
+library(treemapify)
+library(geofacet)
+library(stargazer)
+library(textclean)
+library(stm)
+library(quanteda)
+library(tm)
+library(tidytext)
+library(textdata)
+library(syuzhet)
+library(quanteda.textmodels)
+library(quanteda.textplots)
+library(sf)
+library(gtrendsR)
+library(nngeo)
+library(sfheaders)
+```
+
+```{r EDA2,  echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+
+###  Set WD
+setwd("C:/Users/Fiore/Documents/r_folder")
+
+#getwd()
+#list.files()
+
+### Read
+eda_raw   <-readr::read_csv("mrds.csv")
+eda_raw <-data.frame(eda_raw)
+
+### ETL
+eda_raw <- eda_raw %>% dplyr::select(site_name, latitude, longitude, state, com_type, commod1, commod2, commod3,  prod_size, dev_stat,
+                                     ore, gangue)
+eda_raw[is.na(eda_raw)] <- 0  #Make NAs Zero
+
+
+
+### Set Row Number
+
+eda_raw <-eda_raw %>% mutate(line_number = row_number())
+
+eda_raw %>% dplyr::select(line_number, everything())
+
+
+```
+
+
+
+```{r image,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=10, fig.width=12}
+  #Loading magick package
+library(magick)
+library(curl)
+#reading a png image frink image
+icon <- image_read("https://www.kcmtoday.com/images/kcm/rsi-01.svg")
+icon
+```
+
+## Mineral Deposits Maps
+
+
+## Interactive Plot
+```{r Icons, echo=FALSE, include=FALSE}
+
+library(leaflet)
+
+url<-"https://www.walmart.com/favicon.ico"
+
+
+WMT_ICON <- makeIcon(
+  iconUrl = url,
+  iconWidth = 10, iconHeight = 15,
+  iconAnchorX = 22, iconAnchorY = 94,
+)
+
+```
+
+
+## Data Sets
+```{r Data Sets, echo=FALSE, include=FALSE}
+
+commodity_finder <- function(df,N,D){
+  cdf <- df %>% dplyr::filter(commod1 == N & dev_stat == D)
+  cdf <- data.frame(cdf)
+  nr<-nrow(cdf)
+  print(paste0(nr," Rows"))
+  return(cdf)
+}
+
+
+copper_df <- commodity_finder(eda_raw,"Copper","Producer")
+
+gold_df <- commodity_finder(eda_raw,"Gold","Producer")
+
+lead_df <- commodity_finder(eda_raw,"Lead","Producer")
+
+```
+
+## Commodity Map
+
+```{r Commodity Map, echo=FALSE, out.width = "100%", warning=FALSE}
+### Leaflet Map
+radius_variable <-100
+
+leaflet() %>% addProviderTiles("CartoDB.Positron")  %>% setView(-100, 34, zoom = 4) %>%
+
+addCircles(data=copper_df,~longitude, ~latitude, color =  "copper",   radius = radius_variable, popup = ~as.character(site_name), label = ~as.character(ore), group = "Copper Mines") %>%
+  
+  addCircles(data=gold_df,~longitude, ~latitude,  color = "gold",   radius = radius_variable, popup = ~as.character(site_name), label = ~as.character(ore), group = "Gold Mines") %>%
+  
+  addCircles(data=lead_df,~longitude, ~latitude,   color = "grey", radius =radius_variable, popup = ~as.character(site_name), label = ~as.character(ore), group = "Lead Mines") %>%
+  
+
+addEasyButton(easyButton(
+  icon="fa-globe", title="Zoom to Level 1",
+  onClick=JS("function(btn, map){ map.setZoom(1); }"))) %>%
+  
+  addEasyButton(easyButton(
+    icon="fa-crosshairs", title="Locate Me",
+    onClick=JS("function(btn, map){ map.locate({setView: true}); }"))) %>%
+  
+    # Layers control
+  addLayersControl(
+    overlayGroups = c("Copper Mines","Gold Mines","Lead Mines"),
+    options = layersControlOptions(collapsed = FALSE)) %>%
+  
+   addMiniMap()
+ 
+```
+
+
+## Data Table For Lead
+```{r Data Table, echo=FALSE, warning=FALSE}
+
+
+
+datatable(lead_df, extensions = 'Buttons', options = list(dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print')))
+
+```

@@ -1,0 +1,394 @@
+---
+title: "Exploratory Data Analysis (EDA):  Mineral Data"
+author: 'Fiorello Ieva'
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+    
+always_allow_html: yes
+---
+
+```{r Libraries, include = FALSE, warning=FALSE, message=FALSE}
+###Load Libraries
+library(webshot)
+library(CLVTools)
+library(logbin)
+library(rattle)
+library(corrplot)
+library(fastDummies)
+library(survival)
+library(survminer)
+library(lubridate)
+library(prophet)
+#library(urbnmapr)
+library(ggpubr)
+library(rfm)
+library(ggrepel)
+library(treemap)
+library(rpart.plot)
+library(rpart)
+library(caret)
+library(plotly)
+#library(rbokeh)
+library(DiagrammeR)
+library(crosstalk)
+library(MonteCarlo)
+library(SCperf)
+library(DT)
+library(dplyr)
+library(qrmtools)
+library(TTR)
+library(xts)
+library(zoo)
+library(quantmod)
+library(qrmtools)
+library(forecastHybrid)
+library(forecast)
+library(Quandl)
+library(ggplot2)
+library(ggridges)
+library(MASS)
+library(GMDH)
+library(nnfor)
+library(glmnet)
+library(stats)
+library(keras)
+library(xgboost)
+library(XBRL)
+library(finreportr)
+library(reshape2)
+library(highcharter)
+library(dygraphs)
+library(PerformanceAnalytics)
+library(purrr)
+library(tidyr)
+library(openair)
+library(tidyverse)
+library(wordcloud)
+library(arules)
+library(arulesViz)
+library(officer)
+library(lubridate)
+library(flextable)
+library(statebins)
+library(pander)
+library(kableExtra)
+library(ggridges)
+library(ggthemes)
+library(survival)
+library(survminer)
+library(intergraph)
+library(chron)
+library(pander)
+library(summarytools)
+library(treemapify)
+library(DataExplorer)
+library(ggcorrplot)
+
+options(knitr.duplicate.label = "allow")
+options(scipen=999)
+panderOptions('round', 2)
+panderOptions('keep.trailing.zeros', TRUE)
+options(digits=3)
+options(warn = -1)
+
+st_options(plain.ascii = FALSE)
+
+st_options(bootstrap.css     = FALSE,       # Already part of the theme so no need for it
+           plain.ascii       = FALSE,       # One of the essential settings
+           style             = "rmarkdown", # Idem.
+           dfSummary.silent  = TRUE,        # Suppresses messages about temporary files
+           footnote          = NA,          # Keeping the results minimalistic
+           subtitle.emphasis = FALSE)       # For the vignette theme, this gives better results.
+                                            # For other themes, using TRUE might be preferable.
+
+library(knitr)
+opts_chunk$set(comment=NA, prompt=FALSE, cache=FALSE, echo=TRUE, results='asis')
+st_css()
+
+library(knitr)
+knitr::opts_chunk$set(cache =TRUE)
+
+
+```
+
+
+```{r EDA2,  echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+
+###  Set WD
+setwd("C:/Users/Fiore/Documents/r_folder")
+
+#getwd()
+#list.files()
+
+### Read
+eda_raw   <-readr::read_csv("mrds.csv")
+eda_raw <-data.frame(eda_raw)
+
+### ETL
+eda_raw <- eda_raw %>% dplyr::select(site_name, latitude, longitude, state, com_type, commod1, commod2, commod3,  prod_size, dev_stat,
+                                     ore, gangue)
+eda_raw[is.na(eda_raw)] <- 0  #Make NAs Zero
+
+
+
+### Set Row Number
+
+eda_raw <-eda_raw %>% mutate(line_number = row_number())
+
+eda_raw %>% dplyr::select(line_number, everything())
+
+
+```
+
+
+
+```{r image,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=10, fig.width=12}
+  #Loading magick package
+library(magick)
+library(curl)
+#reading a png image frink image
+icon <- image_read("https://www.kcmtoday.com/images/kcm/rsi-01.svg")
+icon
+```
+
+
+# Exploratory Data Analysis (EDA)
+
+## Data Model
+```{r Tables,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+ 
+
+
+library(datamodelr)
+
+data_report <-eda_raw
+dm_f <- dm_from_data_frames(data_report)
+  
+  
+graph <- dm_create_graph(dm_f, rankdir = "BT", col_attr = c("column", "type"))
+dm_render_graph(graph)
+```
+
+
+## Introduce Data From .XLS (STATS)
+```{r EDA Introduce,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+int<-introduce(eda_raw)
+
+FitFlextableToPage <- function(ft, N){
+  pgwidth<-N
+  ft_out <- ft %>% autofit()
+
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+
+ft <- flextable(int)
+FitFlextableToPage(ft,11)   
+```
+
+
+
+## Missing Data
+```{r EDA Missing,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+plot_intro(eda_raw)
+```
+
+
+
+## Feature Exploration
+```{r EDA3,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+plot_missing(eda_raw)
+
+```
+
+
+## Feature Exploration: Discrete Variables Plot 
+```{r DISCRET CAR PLOT,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+plot_bar(eda_raw)
+
+```
+
+
+
+## Feature Exploration: Continous Variable Histograms
+```{r CV HIST,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+
+plot_histogram(eda_raw)
+
+```
+
+
+## Feature Exploration: Feature Correlation
+```{r ALL Feature CORR,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+
+plot_correlation(eda_raw)
+
+```
+
+## Feature Exploration: Unsupervised Learned
+```{r PCA ALL,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+
+plot_prcomp(eda_raw, maxcat = 5L)
+
+```
+
+
+
+## Feature Exploration: States  
+```{r State Tree Map,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+
+
+
+title <-c("State Tree Map")
+
+tmp<-eda_raw %>% dplyr::group_by(state) %>% summarize(count=n()) %>% arrange(desc(count)) 
+colnames(tmp)<-c("category", "count")
+
+                           
+### Tree Map
+treemap(tmp,
+            index=c("category"),
+            vSize="count",
+            type="index",
+            palette = "Set1",                        # Select your color palette from the RColorBrewer presets or make your own.
+            title=title,                      # Customize your title
+            fontsize.title=12,                       # Size of the title
+ 
+)
+
+```
+
+
+
+
+
+
+## Feature Exploration: Com Type
+```{r com_type Tree Map, out.width='100%', message=FALSE, echo=FALSE}
+
+
+title <-c("Commodity Type")
+
+tmp<-eda_raw %>% dplyr::group_by(com_type) %>% summarize(count=n()) %>% arrange(desc(count)) 
+colnames(tmp)<-c("status", "count")
+
+                           
+### Tree Map
+treemap(tmp,
+            index=c("status"),
+            vSize="count",
+            type="index",
+            palette = "Set1",                        # Select your color palette from the RColorBrewer presets or make your own.
+            title=title,                      # Customize your title
+            fontsize.title=12,                       # Size of the title
+ 
+)
+
+```
+
+
+## Feature Exploration: Commodity 1
+```{r commod1  Tree Map,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+
+
+
+title <-c(" Commodity 1")
+
+tmp<-eda_raw %>% dplyr::group_by(commod1) %>% summarize(count=n()) %>% arrange(desc(count)) 
+colnames(tmp)<-c("Category", "count")
+
+                           
+### Tree Map
+treemap(tmp,
+            index=c("Category"),
+            vSize="count",
+            type="index",
+            palette = "Set1",                        # Select your color palette from the RColorBrewer presets or make your own.
+            title=title,                      # Customize your title
+            fontsize.title=12,                       # Size of the title
+ 
+)
+
+```
+
+## Feature Exploration: Ore Types
+```{r Ore Types,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+
+
+
+title <-c("Ore Types")
+
+tmp<-eda_raw %>% group_by(ore) %>% summarize(count=n()) %>% arrange(desc(count)) 
+colnames(tmp)<-c("Ore", "count")
+
+                           
+### Tree Map
+treemap(tmp,
+            index=c("Ore"),
+            vSize="count",
+            type="index",
+            palette = "Set1",                        # Select your color palette from the RColorBrewer presets or make your own.
+            title=title,                      # Customize your title
+            fontsize.title=12,                       # Size of the title
+ 
+)
+
+```
+
+
+## Feature Exploration: Gangue
+```{r Types of Gangue,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+
+
+
+title <-c("Types of Gangue")
+
+tmp<-eda_raw %>% group_by(gangue) %>% summarize(count=n()) %>% arrange(desc(count)) 
+colnames(tmp)<-c("Gangue", "count")
+
+                           
+### Tree Map
+treemap(tmp,
+            index=c("Gangue"),
+            vSize="count",
+            type="index",
+            palette = "Set1",                        # Select your color palette from the RColorBrewer presets or make your own.
+            title=title,                      # Customize your title
+            fontsize.title=12,                       # Size of the title
+ 
+)
+
+```
+
+## Feature Exploration: Gangue (Filter No Values)
+```{r Types of Gangue FO,  echo=FALSE, message=FALSE, warning=FALSE,  fig.height=5, fig.width=9}
+
+
+
+title <-c("Types of Gangue With Value")
+
+tmp<-eda_raw %>% group_by(gangue) %>% dplyr::filter(gangue != 0) %>% summarize(count=n()) %>% arrange(desc(count)) 
+colnames(tmp)<-c("Gangue", "count")
+
+                           
+### Tree Map
+treemap(tmp,
+            index=c("Gangue"),
+            vSize="count",
+            type="index",
+            palette = "Set1",                        # Select your color palette from the RColorBrewer presets or make your own.
+            title=title,                      # Customize your title
+            fontsize.title=12,                       # Size of the title
+ 
+)
+
+```
+
+
+
+
+
+
